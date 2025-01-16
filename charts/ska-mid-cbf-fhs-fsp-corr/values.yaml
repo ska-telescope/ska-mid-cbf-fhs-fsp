@@ -1,0 +1,129 @@
+# Default values for ska-mid-cbf HELM chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+display: ":0"
+xauthority: "~/.Xauthority"
+
+enabled: true
+
+system: csp
+subsystem: fhs-fsp-corr
+telescope: SKA-mid
+
+labels:
+  app: ska-mid-cbf-fhs-fsp-corr
+
+global:
+  minikube: false
+  k3d: false
+  exposeDatabaseDS: true
+  exposeAllDS: false
+  tango_host: databaseds-tango-base-test:10000
+  dsconfig:
+    image:
+      registry: artefact.skao.int
+      image: ska-tango-images-tango-dsconfig
+      tag: 1.5.13
+      pullPolicy: IfNotPresent
+
+midcbf:
+  image:
+    registry: docker.io/library
+    image: ska-mid-cbf-fhs-fsp-corr
+    tag: 0.0.1
+    pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+    ephemeral-storage: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+    ephemeral-storage: 256Mi
+
+nodeSelector: {}
+
+affinity: {}
+
+tolerations: []
+
+hostInfo:
+  environment: "minikube"
+  hostIP: "127.0.0.1"
+  externalPort: 10001
+  clusterDomain: cluster.local
+  fhsServerId: fhs01
+  namespace: "ska-mid-cbf"
+
+bitstreamMountPath: "/app/mnt/bitstream"
+
+bitstreamDownloadJob:
+  enabled: True
+
+# -------------------------------------------------DEVICE SERVER CONFIGURATION -------------------------------------------------
+
+# As defined in fhs-fsp-corr-stack.yaml, the fhs stack and underlying devices are generated dynamically from the following config.
+# - `properties` defines a set of properties that are common to all devices in the stack. NOTE: values must be strings.
+# - `devices` defines the set of devices contained by every stack.
+#    - Each device must contain `name` and `path`.
+#    - Each device may optionally define `properties` to pass custom properties.
+# - `instances` defines the stacks of devices
+# For every property defined in `properties`, the default value can be overridden at the instance or device level.
+# For example, if `simulationMode` is defined in `properties`, the property associated with each device will resolve in the following order:
+# - `device.simulationMode`, defined in `devices`
+# - `instance.simulationMode`, defined in `instances`
+# - `simulationMode.default`, defined in `properties` (the global, default value)
+# Every string value in name, path, properties, or a instance or device-scoped override, may contain the following placeholder which will be replaced:
+#   - `{{.deviceId}}` will be replaced with the device id of the device (deviceId must be defined in either the device or instance)
+#   - `{{.deviceId000}}` will be replaced with the device id of the device, padded with zeros
+#   - `{{.receptorId}}` will be replaced with the receptor id of the device (calculated by (deviceId - 1) % 3)
+#   - `{{.multiplicity}}` will be replaced with index of the iteration in the range of `devices.multiplicity`
+
+# the default tango properties in each device. optionally provide a default, global value
+properties:
+  deviceId: ""
+  deviceVersionNum: "0.0.1"
+  deviceGitlabHash: "0"
+  simulationMode: "0"
+  emulationMode: "1"
+  emulatorBaseUrl: "ska-mid-cbf-emulators.svc.cluster.local:5001"
+  bitstreamPath: "/app/mnt/bitstream"
+  bitstreamId: "agilex-fsp-corr"
+  bitstreamVersion: "0.0.15"
+  emulatorId: "fsp-corr-emulator-{{.deviceId}}"
+  emulatorIpBlockId: ""
+  firmwareIpBlockId: ""
+
+# the devices in each stack. optionally override any property defined in `properties`. to add extra properties, provide a `properties` dict
+devices:
+  - name: "Mac200"
+    path: "fhs/mac200/{{.deviceId000}}"
+    emulatorIpBlockId: "ethernet_200g"
+    firmwareIpBlockId: "eth200g_{{.receptorId}}"
+    properties:
+      - name: MacType
+        values:
+          - "mac200"
+  - name: "FSPCorrController"
+    path: "fhs/fsp-corr/{{.deviceId000}}"
+    properties:
+      - name: mac_200_fqdn
+        values:
+          - "fhs/mac200/{{.deviceId000}}"
+
+# the top-level stacks, one for every device id. optionally override any property defined in `properties` (if it hasn't been overridden at the device level)
+instances:
+  - name: fhs-fsp-corr-1
+    deviceId: "1"
+  - name: fhs-fsp-corr-2
+    deviceId: "2"
+  - name: fhs-fsp-corr-3
+    deviceId: "3"
+
+deviceServers:
+  fhs-fsp-corr-stack:
+    enabled: true
+    file: "data/fhs_fsp_corr_stack.yaml"

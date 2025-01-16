@@ -1,0 +1,23 @@
+display: ":0"
+xauthority: "~/.Xauthority"
+
+global:
+  minikube: false
+  tango_host: databaseds-tango-base-test:10000
+  environment_variables: []
+  operator: true
+  labels:
+    app: ska-mid-cbf-fhs-fsp-corr
+  sub-system:
+    ska-tango-base:
+      enabled: false
+
+ska-tango-base:
+  vnc:
+    enabled: false
+  tangorest:
+    enabled: false
+  ingress:
+    enabled: false
+  tangodb:
+    use_pv: false

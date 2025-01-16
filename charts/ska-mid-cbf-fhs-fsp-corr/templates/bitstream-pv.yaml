@@ -1,0 +1,32 @@
+{{- $labels := coalesce .Values.global.labels .Values.labels "label:none" }}
+{{- $annotations := coalesce .Values.global.annotations .Values.annotations }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fhs-fsp-corr-bitstream-pv
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ toYaml $labels | indent 4 }}
+{{- if $annotations }}
+  annotations:
+{{ toYaml $annotations | indent 4 }}
+{{- end }}
+spec:
+{{- if (coalesce .Values.global.minikube .Values.minikube false)  }}
+  storageClassName: standard
+{{- else if .Values.global.k3d }}
+  storageClassName: local-path
+{{- else }}
+  storageClassName: nfss1
+{{- end }}
+  accessModes:
+  {{- if .Values.global.k3d }}
+    - ReadWriteOnce
+  {{- else }}
+    - ReadWriteMany
+  {{- end }}
+  resources:
+    requests:
+      storage: "1Gi"

@@ -1,0 +1,29 @@
+apiVersion: v2
+name: ska-mid-cbf-fsp-umbrella
+description: An umbrella Helm chart for deploying the whole Mid_CBF FHS-FSP prototype.
+appVersion: 0.0.1
+version: 0.0.1
+icon: https://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+dependencies:
+- name: ska-tango-util
+  version: 0.4.13
+  repository: https://artefact.skao.int/repository/helm-internal
+  #repository: "file:///home/ja004983_p/projects/ska-tango-charts/charts/ska-tango-util"
+  #repository: "file://../../../ska-tango-charts/charts/ska-tango-util"
+- name: ska-tango-base
+  version: 0.4.13
+  repository: https://artefact.skao.int/repository/helm-internal
+- name: ska-taranta
+  version: 1.0.29
+  repository: https://artefact.skao.int/repository/helm-internal
+  condition: ska-taranta.enabled
+- name: ska-taranta-auth
+  version: 0.1.5
+  repository: https://artefact.skao.int/repository/helm-internal
+  condition: ska-taranta-auth.enabled
+- name: ska-mid-cbf-fhs-fsp
+  version: 0.0.1
+  repository: "file://../ska-mid-cbf-fhs-fsp"
+- name: ska-mid-cbf-fhs-vcc-boogie
+  version: 0.1.0
+  repository: https://artefact.skao.int/repository/helm-internal

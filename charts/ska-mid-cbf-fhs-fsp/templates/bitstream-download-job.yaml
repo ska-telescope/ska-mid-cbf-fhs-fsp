@@ -1,0 +1,39 @@
+{{- if .Values.bitstreamDownloadJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bitstream-download-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: bitstream-download-job
+          image: alpine:latest
+          command: ["sh", "-c"]
+          args:
+            - |
+              apk add --no-cache curl tar && \
+              {{ range $index, $instance := $.Values.instances -}}
+              {{ $bitstreamId := tpl (default $instance.bitstreamId | default $.Values.properties.bitstreamId) $instance -}}
+              {{ $bitstreamVersion := tpl (default $instance.bitstreamVersion | default $.Values.properties.bitstreamVersion) $instance -}}
+              BITSTREAM_ID={{ $bitstreamId }} && \
+              BITSTREAM_VER={{ $bitstreamVersion }} && \
+              BITSTREAM_SUBPATH=$BITSTREAM_ID/$BITSTREAM_VER && \
+              echo "Downloading bitstream $BITSTREAM_SUBPATH" && \
+              TARBALL="ska-mid-cbf-$BITSTREAM_ID-$BITSTREAM_VER.tar.gz" && \
+              if [ ! -d {{ $.Values.bitstreamMountPath }}/$BITSTREAM_SUBPATH ]; then \
+                curl -L -o /tmp/$TARBALL {{ if $.Values.gitlab_bitstream_url_override -}} {{ $.Values.gitlab_bitstream_url_override }} {{- else -}} https://artefact.skao.int/repository/raw-internal/$TARBALL {{- end }} && \
+                mkdir -p {{ $.Values.bitstreamMountPath }}/$BITSTREAM_SUBPATH && \
+                tar xvzf /tmp/$TARBALL -C {{ $.Values.bitstreamMountPath }}/$BITSTREAM_SUBPATH {{ if $.Values.gitlab_bitstream_url_override -}} --strip-components=3 {{- end }} ; \
+              fi && \
+              {{ end -}}
+              find {{ $.Values.bitstreamMountPath }}
+          volumeMounts:
+            - name: bitstream-pv
+              mountPath: {{ .Values.bitstreamMountPath }}
+      restartPolicy: Never
+      volumes:
+        - name: bitstream-pv
+          persistentVolumeClaim:
+            claimName: fhs-fsp-bitstream-pv
+{{- end }}

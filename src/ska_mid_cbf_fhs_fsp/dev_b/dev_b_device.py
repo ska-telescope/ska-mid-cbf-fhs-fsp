@@ -47,7 +47,7 @@ class DevB(FhsLowLevelDeviceBase):
         self.component_manager.b_attr_3 = value
         self.push_change_event("bAttr3")
 
-    def __init__(self):
+    def init_device(self):
         super(SKAObsDevice, self).init_device()
         self.set_change_event("communicationState", True)
         self.set_change_event("bAttr1", True, True)

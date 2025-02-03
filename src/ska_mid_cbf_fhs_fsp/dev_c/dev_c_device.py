@@ -29,7 +29,7 @@ class DevC(FhsLowLevelDeviceBase):
         self.component_manager.c_attr = value
         self.push_change_event("cAttr")
 
-    def __init__(self):
+    def init_device(self):
         super(SKAObsDevice, self).init_device()
         self.set_change_event("communicationState", True)
         self.set_change_event("cAttr", True, True)

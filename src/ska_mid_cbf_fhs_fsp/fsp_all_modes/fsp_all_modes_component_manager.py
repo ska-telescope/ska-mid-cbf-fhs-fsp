@@ -255,7 +255,6 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         return result
 
     def _apply_fsp_mode_subscriptions(self, mode: FSPMode):
-        # ATTR_POLL_MS = 100
         EMPTY_SET = {"attrs": set(), "event_ids": {}}
         self.logger.warning(f"Applying subscriptions for mode {mode.name}")
         for fqdn in self._proxies:
@@ -266,7 +265,6 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                     self.logger.warning(f"Subscribing only as current mode is {self.fsp_mode.name} and new mode is {mode.name}")
                     for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
                         self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
-                        # self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
                             sub_attr,
                             EventType.CHANGE_EVENT,
@@ -277,13 +275,11 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                     curr_subs = self.attr_subscriptions[self._fsp_mode].get(fqdn, EMPTY_SET)
                     for unsub_attr in curr_subs["attrs"] - new_subs["attrs"]:
                         self.logger.warning(f"REMOVING subscription for attribute {unsub_attr} for fqdn {fqdn} for mode {mode.name}")
-                        self._proxies[fqdn].stop_poll_attribute(unsub_attr)
                         if (event_id := curr_subs["event_ids"][unsub_attr]) != -1:
                             self._proxies[fqdn].unsubscribe_event(event_id)
                             curr_subs["event_ids"][unsub_attr] = -1
                     for sub_attr in new_subs["attrs"] - curr_subs["attrs"]:
                         self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
-                        # self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
                             sub_attr,
                             EventType.CHANGE_EVENT,

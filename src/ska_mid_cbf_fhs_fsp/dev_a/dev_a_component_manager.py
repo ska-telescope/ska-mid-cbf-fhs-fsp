@@ -38,6 +38,8 @@ class DevAComponentManager(FhsLowLevelComponentManagerBase):
             **kwargs,
         )
 
+        self.a_attr = "A_DEFAULT"
+
     def go_to_idle(self: DevAComponentManager) -> tuple[ResultCode, str]:
         result = self.deconfigure(DevAConfig().to_dict())
 

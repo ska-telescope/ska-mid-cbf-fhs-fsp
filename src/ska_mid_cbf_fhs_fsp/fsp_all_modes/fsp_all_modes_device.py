@@ -14,6 +14,14 @@ class FSPAllModesController(FhsBaseDevice):
     dev_b_fqdn = device_property(dtype="str")
     dev_c_fqdn = device_property(dtype="str")
 
+    @attribute(dtype=int)
+    def fspMode(self) -> int:
+        return self.component_manager.fsp_mode
+
+    @fspMode.write
+    def fspMode(self, value: int) -> None:
+        self.component_manager.fsp_mode = value
+
     def create_component_manager(self: FSPAllModesController) -> FSPAllModesComponentManager:
         return FSPAllModesComponentManager(
             device=self,

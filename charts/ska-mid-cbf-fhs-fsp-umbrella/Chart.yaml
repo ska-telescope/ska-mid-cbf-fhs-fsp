@@ -26,4 +26,4 @@ dependencies:
   repository: "file://../ska-mid-cbf-fhs-fsp"
 - name: ska-mid-cbf-fhs-vcc-boogie
   version: 0.1.0
-  repository: https://artefact.skao.int/repository/helm-internal
+  repository: "file://../../../ska-mid-cbf-fhs-vcc/charts/ska-mid-cbf-fhs-vcc-boogie"

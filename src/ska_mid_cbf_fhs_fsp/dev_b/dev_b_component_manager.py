@@ -38,6 +38,10 @@ class DevBComponentManager(FhsLowLevelComponentManagerBase):
             **kwargs,
         )
 
+        self.b_attr_1 = 1234
+        self.b_attr_2 = "B2_DEFAULT"
+        self.b_attr_3 = "B3_DEFAULT"
+
     def go_to_idle(self: DevBComponentManager) -> tuple[ResultCode, str]:
         result = self.deconfigure(DevBConfig().to_dict())
 

@@ -9,13 +9,21 @@
 from __future__ import annotations
 
 from ska_mid_cbf_fhs_common import FhsLowLevelDeviceBase
-from tango.server import device_property
+from tango.server import attribute, device_property
 
 from ska_mid_cbf_fhs_fsp.dev_a.dev_a_component_manager import DevAComponentManager
 
 
 class DevA(FhsLowLevelDeviceBase):
     DevAType = device_property(dtype="str")
+
+    @attribute(dtype="str")
+    def aAttr(self: DevA) -> str:
+        return self.component_manager.a_attr
+
+    @aAttr.write
+    def aAttr(self: DevA, value: str) -> None:
+        self.component_manager.a_attr = value
 
     def create_component_manager(self: DevA) -> DevAComponentManager:
         return DevAComponentManager(

@@ -15,7 +15,7 @@ from ska_tango_base.base.base_component_manager import TaskCallbackType
 from ska_tango_testing import context
 from tango import EventData, EventType
 
-from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_helpers import FrequencyBandEnum, freq_band_dict
+from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_helpers import FSPMode, FrequencyBandEnum, freq_band_dict
 
 from .fsp_all_modes_config import schema
 
@@ -36,7 +36,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
     ) -> None:
         self.device = device
         self._fsp_id = device.device_id
-        self._fsp_mode = -1
+        self._fsp_mode = FSPMode.UNKNOWN
 
         self.attr_subscriptions = {
             0: {
@@ -81,19 +81,19 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
             **kwargs,
         )
 
-        self.fsp_mode = 0
+        self.fsp_mode = FSPMode.CORR
 
     @property
-    def fsp_mode(self):
+    def fsp_mode(self) -> FSPMode:
         return self._fsp_mode
 
     @fsp_mode.setter
-    def fsp_mode(self, new_mode: int):
+    def fsp_mode(self, new_mode: FSPMode):
         self._apply_fsp_mode_subscriptions(new_mode)
 
         self._fsp_mode = new_mode
         
-        self.logger.warn(f"FSP Mode Changed to: {new_mode}")
+        self.logger.warning(f"FSP Mode Changed to: {new_mode.name}")
 
     @property
     def attr_subscriptions(self):
@@ -116,46 +116,8 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
             } for mode, fqdns in attr_map.items()
         }
 
-    def _apply_fsp_mode_subscriptions(self, mode: int):
-        ATTR_POLL_MS = 100
-        EMPTY_SET = {"attrs": set(), "event_ids": {}}
-        self.logger.warn(f"Applying subscriptions for mode {mode}")
-        for fqdn in self._proxies:
-            if self._proxies[fqdn] is not None:
-                self.logger.warn(f"Applying subscriptions for fqdn {fqdn} for mode {mode}")
-                new_subs = self.attr_subscriptions[mode].get(fqdn, EMPTY_SET)
-                if self.fsp_mode == -1 or self.fsp_mode == mode:
-                    self.logger.warn(f"Subscribing only as current mode is {self.fsp_mode} and new mode is {mode}")
-                    for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
-                        self.logger.warn(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode}")
-                        self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
-                        new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
-                            sub_attr,
-                            EventType.CHANGE_EVENT,
-                            self.attr_change_callback
-                        )
-                else:
-                    self.logger.warn(f"Subbing + Unsubbing")
-                    curr_subs = self.attr_subscriptions[self._fsp_mode].get(fqdn, EMPTY_SET)
-                    for unsub_attr in curr_subs["attrs"] - new_subs["attrs"]:
-                        self.logger.warn(f"REMOVING subscription for attribute {unsub_attr} for fqdn {fqdn} for mode {mode}")
-                        self._proxies[fqdn].stop_poll_attribute(unsub_attr)
-                        if (event_id := curr_subs["event_ids"][unsub_attr]) != -1:
-                            self._proxies[fqdn].unsubscribe_event(event_id)
-                            curr_subs["event_ids"][unsub_attr] = -1
-                    for sub_attr in new_subs["attrs"] - curr_subs["attrs"]:
-                        self.logger.warn(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode}")
-                        self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
-                        new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
-                            sub_attr,
-                            EventType.CHANGE_EVENT,
-                            self.attr_change_callback
-                        )
-            else:
-                self.logger.debug(f"Skipping applying subscriptions for FQDN {fqdn} as is has not yet been connected to.")
-
     def attr_change_callback(self, event: EventData):
-        self.logger.warn(f"FSP Attribute Change: DEVICE={event.device.dev_name()}, ATTR={event.attr_name}, VALUE={event.attr_value.value if event.attr_value is not None else 'None'}")
+        self.logger.warning(f"FSP Attribute Change: DEVICE={event.device.dev_name()}, ATTR={event.attr_name}, VALUE={event.attr_value.value if event.attr_value is not None else 'None'}")
 
     def start_communicating(self: FSPAllModesComponentManager) -> None:
         """Establish communication with the component, then start monitoring."""
@@ -291,6 +253,44 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
 
         self._obs_state_action_callback(FhsObsStateMachine.ABORT_COMPLETED)
         return result
+
+    def _apply_fsp_mode_subscriptions(self, mode: FSPMode):
+        # ATTR_POLL_MS = 100
+        EMPTY_SET = {"attrs": set(), "event_ids": {}}
+        self.logger.warning(f"Applying subscriptions for mode {mode.name}")
+        for fqdn in self._proxies:
+            if self._proxies[fqdn] is not None:
+                self.logger.warning(f"Applying subscriptions for fqdn {fqdn} for mode {mode.name}")
+                new_subs = self.attr_subscriptions[mode].get(fqdn, EMPTY_SET)
+                if self.fsp_mode == -1 or self.fsp_mode == mode:
+                    self.logger.warning(f"Subscribing only as current mode is {self.fsp_mode} and new mode is {mode.name}")
+                    for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
+                        self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        # self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
+                        new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
+                            sub_attr,
+                            EventType.CHANGE_EVENT,
+                            self.attr_change_callback
+                        )
+                else:
+                    self.logger.warning(f"Subbing + Unsubbing")
+                    curr_subs = self.attr_subscriptions[self._fsp_mode].get(fqdn, EMPTY_SET)
+                    for unsub_attr in curr_subs["attrs"] - new_subs["attrs"]:
+                        self.logger.warning(f"REMOVING subscription for attribute {unsub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        self._proxies[fqdn].stop_poll_attribute(unsub_attr)
+                        if (event_id := curr_subs["event_ids"][unsub_attr]) != -1:
+                            self._proxies[fqdn].unsubscribe_event(event_id)
+                            curr_subs["event_ids"][unsub_attr] = -1
+                    for sub_attr in new_subs["attrs"] - curr_subs["attrs"]:
+                        self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        # self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)
+                        new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
+                            sub_attr,
+                            EventType.CHANGE_EVENT,
+                            self.attr_change_callback
+                        )
+            else:
+                self.logger.debug(f"Skipping applying subscriptions for FQDN {fqdn} as is has not yet been connected to.")
 
     def _configure_scan(
         self: FSPAllModesComponentManager,

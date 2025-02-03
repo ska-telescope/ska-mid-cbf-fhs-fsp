@@ -1,4 +1,11 @@
-from enum import Enum
+from enum import Enum, IntEnum
+
+class FSPMode(IntEnum):
+    UNKNOWN = -1
+    CORR = 0
+    PSS = 1
+    PST = 2
+    VLBI = 3
 
 
 class FrequencyBandEnum(Enum):

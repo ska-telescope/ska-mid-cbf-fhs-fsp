@@ -7,6 +7,7 @@ from ska_tango_base.base.base_device import DevVarLongStringArrayType
 from tango.server import attribute, command, device_property
 
 from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_component_manager import FSPAllModesComponentManager
+from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_helpers import FSPMode
 
 
 class FSPAllModesController(FhsBaseDevice):
@@ -14,12 +15,17 @@ class FSPAllModesController(FhsBaseDevice):
     dev_b_fqdn = device_property(dtype="str")
     dev_c_fqdn = device_property(dtype="str")
 
-    @attribute(dtype=int)
-    def fspMode(self) -> int:
+    @attribute(
+        abs_change=1,
+        dtype=tango.DevEnum,
+        enum_labels=[m.name for m in FSPMode],
+        doc="FSP Mode",
+    )
+    def fspMode(self) -> FSPMode:
         return self.component_manager.fsp_mode
 
     @fspMode.write
-    def fspMode(self, value: int) -> None:
+    def fspMode(self, value: FSPMode) -> None:
         self.component_manager.fsp_mode = value
 
     def create_component_manager(self: FSPAllModesController) -> FSPAllModesComponentManager:

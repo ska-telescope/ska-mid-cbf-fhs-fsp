@@ -9,7 +9,10 @@
 from __future__ import annotations
 
 from ska_mid_cbf_fhs_common import FhsLowLevelDeviceBase
+from ska_tango_base import SKAObsDevice
 from tango.server import attribute, device_property
+from tango import DevState
+from ska_control_model import HealthState, ObsState
 
 from ska_mid_cbf_fhs_fsp.dev_c.dev_c_component_manager import DevCComponentManager
 
@@ -24,6 +27,16 @@ class DevC(FhsLowLevelDeviceBase):
     @cAttr.write
     def cAttr(self, value: str) -> None:
         self.component_manager.c_attr = value
+        self.push_change_event("cAttr")
+
+    def __init__(self):
+        super(SKAObsDevice, self).init_device()
+        self.set_change_event("communicationState", True)
+        self.set_change_event("cAttr", True, True)
+        self.set_state(DevState.ON)
+        self.set_status("ON")
+        self._update_health_state(HealthState.OK)
+        self._update_obs_state(obs_state=ObsState.IDLE)
 
     def create_component_manager(self: DevC) -> DevCComponentManager:
         return DevCComponentManager(

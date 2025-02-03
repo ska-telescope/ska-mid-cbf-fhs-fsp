@@ -27,7 +27,7 @@ class DevC(FhsLowLevelDeviceBase):
     @cAttr.write
     def cAttr(self, value: str) -> None:
         self.component_manager.c_attr = value
-        self.push_change_event("cAttr")
+        self.push_change_event("cAttr", value)
 
     def init_device(self):
         super(SKAObsDevice, self).init_device()

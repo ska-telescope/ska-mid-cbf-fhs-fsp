@@ -27,7 +27,7 @@ class DevA(FhsLowLevelDeviceBase):
     @aAttr.write
     def aAttr(self: DevA, value: str) -> None:
         self.component_manager.a_attr = value
-        self.push_change_event("aAttr")
+        self.push_change_event("aAttr", value)
 
     def init_device(self):
         super(SKAObsDevice, self).init_device()

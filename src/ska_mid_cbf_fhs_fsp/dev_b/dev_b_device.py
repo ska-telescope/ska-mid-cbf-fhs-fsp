@@ -27,7 +27,7 @@ class DevB(FhsLowLevelDeviceBase):
     @bAttr1.write
     def bAttr1(self, value: int) -> None:
         self.component_manager.b_attr_1 = value
-        self.push_change_event("bAttr1")
+        self.push_change_event("bAttr1", value)
     
     @attribute(dtype=str)
     def bAttr2(self) -> str:
@@ -36,7 +36,7 @@ class DevB(FhsLowLevelDeviceBase):
     @bAttr2.write
     def bAttr2(self, value: str) -> None:
         self.component_manager.b_attr_2 = value
-        self.push_change_event("bAttr2")
+        self.push_change_event("bAttr2", value)
     
     @attribute(dtype=str)
     def bAttr3(self) -> str:
@@ -45,7 +45,7 @@ class DevB(FhsLowLevelDeviceBase):
     @bAttr3.write
     def bAttr3(self, value: str) -> None:
         self.component_manager.b_attr_3 = value
-        self.push_change_event("bAttr3")
+        self.push_change_event("bAttr3", value)
 
     def init_device(self):
         super(SKAObsDevice, self).init_device()

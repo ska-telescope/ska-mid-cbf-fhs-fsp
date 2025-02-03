@@ -25,8 +25,8 @@ class FSPAllModesController(FhsBaseDevice):
         return self.component_manager.fsp_mode
 
     @fspMode.write
-    def fspMode(self, value: FSPMode) -> None:
-        self.component_manager.fsp_mode = value
+    def fspMode(self, value: int | FSPMode) -> None:
+        self.component_manager.fsp_mode = FSPMode(value)
 
     def create_component_manager(self: FSPAllModesController) -> FSPAllModesComponentManager:
         return FSPAllModesComponentManager(

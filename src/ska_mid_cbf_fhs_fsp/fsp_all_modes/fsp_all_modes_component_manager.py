@@ -263,7 +263,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                 self.logger.warning(f"Applying subscriptions for fqdn {fqdn} for mode {mode.name}")
                 new_subs = self.attr_subscriptions[mode].get(fqdn, EMPTY_SET)
                 if self.fsp_mode == -1 or self.fsp_mode == mode:
-                    self.logger.warning(f"Subscribing only as current mode is {self.fsp_mode} and new mode is {mode.name}")
+                    self.logger.warning(f"Subscribing only as current mode is {self.fsp_mode.name} and new mode is {mode.name}")
                     for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
                         self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
                         # self._proxies[fqdn].poll_attribute(sub_attr, ATTR_POLL_MS)

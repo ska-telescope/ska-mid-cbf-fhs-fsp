@@ -260,9 +260,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                 new_subs = self.attr_subscriptions[mode].get(fqdn, EMPTY_SET)
                 if self.fsp_mode == -1 or self.fsp_mode == mode:
                     for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
-                        self.logger.debug(
-                            f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}"
-                        )
+                        self.logger.debug(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
                             sub_attr, EventType.CHANGE_EVENT, self.attr_change_callback
                         )
@@ -276,9 +274,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                             self._proxies[fqdn].unsubscribe_event(event_id)
                             curr_subs["event_ids"][unsub_attr] = -1
                     for sub_attr in new_subs["attrs"] - curr_subs["attrs"]:
-                        self.logger.debug(
-                            f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}"
-                        )
+                        self.logger.debug(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
                             sub_attr, EventType.CHANGE_EVENT, self.attr_change_callback
                         )

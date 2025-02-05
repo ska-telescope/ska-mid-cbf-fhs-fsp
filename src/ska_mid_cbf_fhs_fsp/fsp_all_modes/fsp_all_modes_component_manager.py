@@ -37,6 +37,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         self._fsp_id = device.device_id
         self._fsp_mode = FSPMode.UNKNOWN
 
+        # TODO: move this config into JSON file
         self.attr_subscriptions = {
             FSPMode.CORR: {
                 device.dev_a_fqdn: ["aAttr"],

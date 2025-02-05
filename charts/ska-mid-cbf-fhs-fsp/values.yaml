@@ -65,7 +65,7 @@ bitstreamDownloadJob:
 
 # -------------------------------------------------DEVICE SERVER CONFIGURATION -------------------------------------------------
 
-# As defined in fhs-vcc-stack.yaml, the fhs stack and underlying devices are generated dynamically from the following config.
+# As defined in fhs_fsp_stack.yaml, the fhs stack and underlying devices are generated dynamically from the following config.
 # - `properties` defines a set of properties that are common to all devices in the stack. NOTE: values must be strings.
 # - `devices` defines the set of devices contained by every stack.
 #    - Each device must contain `name` and `path`.
@@ -91,6 +91,7 @@ properties:
   emulationMode: "0"
   emulatorBaseUrl: "ska-mid-cbf-emulators.svc.cluster.local:5001"
   bitstreamPath: "/app/mnt/bitstream"
+# TODO: change agilex-vcc to agilex-fsp(-corr/etc) once bitstreams are available
   bitstreamId: "agilex-vcc"
   bitstreamVersion: "0.0.16"
   emulatorId: "fsp-emulator-{{.deviceId}}"

@@ -10,6 +10,9 @@ authors = [
 license = "BSD license"
 readme = "README.md"
 
+[project.scripts]
+FhsFspStackDeviceServer = 'ska_mid_cbf_fhs_fsp.fhs_fsp_stack_device_server:main'
+
 [tool.poetry]
 packages = [{ include = "ska_mid_cbf_fhs_fsp", from = "src" }]
 

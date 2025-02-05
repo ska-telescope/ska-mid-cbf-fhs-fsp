@@ -19,16 +19,16 @@ CONFIG_LOCATION ?= /app/mnt/lowLevelConfigMap
 
 HELM_RELEASE ?= test##H ELM_RELEASE is the release that all Kubernetes resources will be labelled with
 
-OCI_IMAGES = ska-mid-cbf-fhs-fsp-corr
+OCI_IMAGES = ska-mid-cbf-fhs-fsp
 OCI_IMAGES_TO_PUBLISH ?= $(OCI_IMAGES)
 OCI_IMAGE_BUILD_CONTEXT = $(PWD)
 
-#HELM_CHART ?= ska-mid-cbf-fhs-corr-umbrella## HELM_CHART the chart name
+HELM_CHART ?= ska-mid-cbf-fhs-fsp-umbrella## HELM_CHART the chart name
 K8S_CHART ?= $(HELM_CHART)
 TANGO_DATABASE = tango-databaseds-$(HELM_RELEASE)
 TANGO_HOST = $(TANGO_DATABASE):10000## TANGO_HOST is an input!
 
-#K8S_UMBRELLA_CHART_PATH ?= ./charts/ska-mid-cbf-fhs-corr-umbrella
+K8S_UMBRELLA_CHART_PATH ?= ./charts/ska-mid-cbf-fhs-fsp-umbrella
 
 CI_REGISTRY ?= gitlab.com/ska-telescope/ska-mid-cbf-fhs-fsp
 

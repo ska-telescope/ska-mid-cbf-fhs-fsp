@@ -8,11 +8,11 @@
 
 from __future__ import annotations
 
+from ska_control_model import HealthState, ObsState
 from ska_mid_cbf_fhs_common import FhsLowLevelDeviceBase
 from ska_tango_base import SKAObsDevice
-from tango.server import attribute, device_property
 from tango import DevState
-from ska_control_model import HealthState, ObsState
+from tango.server import attribute, device_property
 
 from ska_mid_cbf_fhs_fsp.dev_c.dev_c_component_manager import DevCComponentManager
 

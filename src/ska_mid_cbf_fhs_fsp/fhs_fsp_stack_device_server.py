@@ -19,7 +19,7 @@ def main(args=None, **kwargs):  # noqa: E302
             DevA,
             DevB,
             DevC,
-	    FSPAllModesController,
+            FSPAllModesController,
         ),
         args=args,
         **kwargs,

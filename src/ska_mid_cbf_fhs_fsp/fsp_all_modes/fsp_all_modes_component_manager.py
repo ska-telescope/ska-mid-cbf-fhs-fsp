@@ -12,15 +12,14 @@ from ska_control_model import CommunicationStatus, HealthState, ObsState, Result
 from ska_control_model.faults import StateModelError
 from ska_mid_cbf_fhs_common import FhsBaseDevice, FhsComponentManagerBase, FhsHealthMonitor, FhsObsStateMachine
 from ska_tango_base.base.base_component_manager import TaskCallbackType
-from ska_tango_testing import context
-from tango import EventData, EventType
+from tango import DeviceProxy, EventData, EventType
 
-from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_helpers import FSPMode, FrequencyBandEnum, freq_band_dict
+from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_helpers import FSPMode
 
-from .fsp_all_modes_config import schema
+from .fsp_all_modes_config import config_schema
+
 
 class FSPAllModesComponentManager(FhsComponentManagerBase):
-
     def __init__(
         self: FSPAllModesComponentManager,
         *args: Any,
@@ -39,21 +38,26 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         self._fsp_mode = FSPMode.UNKNOWN
 
         self.attr_subscriptions = {
-            0: {
+            FSPMode.CORR: {
                 device.dev_a_fqdn: ["aAttr"],
                 device.dev_b_fqdn: ["bAttr1", "bAttr2"],
             },
-            1: {
+            FSPMode.PST: {
                 device.dev_b_fqdn: ["bAttr2", "bAttr3"],
                 device.dev_c_fqdn: ["cAttr"],
-            }   
+            },
+            FSPMode.PSS: {
+                device.dev_a_fqdn: ["aAttr"],
+                device.dev_b_fqdn: ["bAttr1", "bAttr3"],
+                device.dev_c_fqdn: ["cAttr"],
+            },
         }
         self._config_id = ""
 
         self.simulation_mode = simulation_mode
         self.emulation_mode = emulation_mode
 
-        self._proxies: dict[str, context.DeviceProxy] = {}
+        self._proxies: dict[str, DeviceProxy] = {}
 
         self._proxies[device.dev_a_fqdn] = None
         self._proxies[device.dev_b_fqdn] = None
@@ -92,8 +96,8 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         self._apply_fsp_mode_subscriptions(new_mode)
 
         self._fsp_mode = new_mode
-        
-        self.logger.warning(f"FSP Mode Changed to: {new_mode.name}")
+
+        self.logger.info(f"FSP Mode Changed to: {new_mode.name}")
 
     @property
     def attr_subscriptions(self):
@@ -103,21 +107,16 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
             return None
 
     @attr_subscriptions.setter
-    def attr_subscriptions(
-        self,
-        attr_map: dict[int, dict[str, list[str]]]
-    ):
+    def attr_subscriptions(self, attr_map: dict[int, dict[str, list[str]]]):
         self._attr_subscriptions = {
-            mode: {
-                fqdn: {
-                    "attrs": set(attrs),
-                    "event_ids": {attr: -1 for attr in attrs}
-                } for fqdn, attrs in fqdns.items()
-            } for mode, fqdns in attr_map.items()
+            mode: {fqdn: {"attrs": set(attrs), "event_ids": {attr: -1 for attr in attrs}} for fqdn, attrs in fqdns.items()}
+            for mode, fqdns in attr_map.items()
         }
 
     def attr_change_callback(self, event: EventData):
-        self.logger.warning(f"FSP Attribute Change: DEVICE={event.device.dev_name()}, ATTR={event.attr_name}, VALUE={event.attr_value.value if event.attr_value is not None else 'None'}")
+        self.logger.debug(
+            f"FSP Attribute Change: DEVICE={event.device.dev_name()}, ATTR={event.attr_name}, VALUE={event.attr_value.value if event.attr_value is not None else 'None'}"
+        )
 
     def start_communicating(self: FSPAllModesComponentManager) -> None:
         """Establish communication with the component, then start monitoring."""
@@ -132,7 +131,7 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                 for fqdn, dp in self._proxies.items():
                     if dp is None:
                         self.logger.info(f"Establishing Communication with {fqdn}")
-                        dp = context.DeviceProxy(device_name=fqdn)
+                        dp = DeviceProxy(device_name=fqdn)
                         # NOTE: this crashes when adminMode is memorized because it gets called before the devices are ready
                         self._subscribe_to_change_event(dp, "healthState", fqdn, self.proxies_health_state_change_event)
                         self._subscribe_to_change_event(dp, "longRunningCommandResult", fqdn, self._long_running_command_callback)
@@ -256,34 +255,32 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
 
     def _apply_fsp_mode_subscriptions(self, mode: FSPMode):
         EMPTY_SET = {"attrs": set(), "event_ids": {}}
-        self.logger.warning(f"Applying subscriptions for mode {mode.name}")
         for fqdn in self._proxies:
             if self._proxies[fqdn] is not None:
-                self.logger.warning(f"Applying subscriptions for fqdn {fqdn} for mode {mode.name}")
                 new_subs = self.attr_subscriptions[mode].get(fqdn, EMPTY_SET)
                 if self.fsp_mode == -1 or self.fsp_mode == mode:
-                    self.logger.warning(f"Subscribing only as current mode is {self.fsp_mode.name} and new mode is {mode.name}")
                     for sub_attr in filter(lambda a: new_subs["event_ids"][a] == -1, new_subs["attrs"]):
-                        self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        self.logger.debug(
+                            f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}"
+                        )
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
-                            sub_attr,
-                            EventType.CHANGE_EVENT,
-                            self.attr_change_callback
+                            sub_attr, EventType.CHANGE_EVENT, self.attr_change_callback
                         )
                 else:
-                    self.logger.warning(f"Subbing + Unsubbing")
                     curr_subs = self.attr_subscriptions[self._fsp_mode].get(fqdn, EMPTY_SET)
                     for unsub_attr in curr_subs["attrs"] - new_subs["attrs"]:
-                        self.logger.warning(f"REMOVING subscription for attribute {unsub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        self.logger.debug(
+                            f"REMOVING subscription for attribute {unsub_attr} for fqdn {fqdn} for mode {mode.name}"
+                        )
                         if (event_id := curr_subs["event_ids"][unsub_attr]) != -1:
                             self._proxies[fqdn].unsubscribe_event(event_id)
                             curr_subs["event_ids"][unsub_attr] = -1
                     for sub_attr in new_subs["attrs"] - curr_subs["attrs"]:
-                        self.logger.warning(f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}")
+                        self.logger.debug(
+                            f"Applying subscription for attribute {sub_attr} for fqdn {fqdn} for mode {mode.name}"
+                        )
                         new_subs["event_ids"][sub_attr] = self._proxies[fqdn].subscribe_event(
-                            sub_attr,
-                            EventType.CHANGE_EVENT,
-                            self.attr_change_callback
+                            sub_attr, EventType.CHANGE_EVENT, self.attr_change_callback
                         )
             else:
                 self.logger.debug(f"Skipping applying subscriptions for FQDN {fqdn} as is has not yet been connected to.")
@@ -294,34 +291,63 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         task_callback: Optional[Callable] = None,
         task_abort_event: Optional[Event] = None,
     ) -> None:
+        """Read from JSON Config argin and setup the FSP controller with initial configuration from the control software"""
         try:
-            """
-            Read from JSON Config argin and setup VCC All bands with initial configuration from the control
-            software
-            """
             self._obs_state_action_callback(FhsObsStateMachine.CONFIGURE_INVOKED)
             task_callback(status=TaskStatus.IN_PROGRESS)
             configuration = json.loads(argin)
-            jsonschema.validate(configuration, schema)
+            jsonschema.validate(configuration, config_schema)
             if self.task_abort_event_is_set("ConfigureScan", task_callback, task_abort_event):
                 return
 
             self._config_id = configuration["config_id"]
 
             if not self.simulation_mode:
-
-                # Dev A Configuration
-                self.logger.info("Dev A Configuring..")
-                result = self._proxies[self.device.dev_a_fqdn].Configure(
-                    json.dumps({"something": "ghijk"})
-                )
-                if result[0] == ResultCode.FAILED:
-                    self.logger.error(f"Configuration of Dev A failed: {result[1]}")
-                    self._reset_devices([self.device.dev_a_fqdn])
-                    self._set_task_callback(
-                        task_callback, TaskStatus.COMPLETED, ResultCode.REJECTED, "Configuration of low-level fhs device failed"
-                    )
-                    return
+                match self.fsp_mode:
+                    case FSPMode.CORR:
+                        # Dev A Configuration
+                        self.logger.info("Dev A Configuring..")
+                        result = self._proxies[self.device.dev_a_fqdn].Configure(json.dumps({"something": "a_config"}))
+                        if result[0] == ResultCode.FAILED:
+                            self.logger.error(f"Configuration of Dev A failed: {result[1]}")
+                            self._reset_devices([self.device.dev_a_fqdn])
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.REJECTED,
+                                "Configuration of low-level fhs device failed",
+                            )
+                            return
+                    case FSPMode.PST:
+                        # Dev B Configuration
+                        self.logger.info("Dev B Configuring..")
+                        result = self._proxies[self.device.dev_b_fqdn].Configure(json.dumps({"something": "b_config"}))
+                        if result[0] == ResultCode.FAILED:
+                            self.logger.error(f"Configuration of Dev B failed: {result[1]}")
+                            self._reset_devices([self.device.dev_b_fqdn])
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.REJECTED,
+                                "Configuration of low-level fhs device failed",
+                            )
+                            return
+                    case FSPMode.PSS:
+                        # Dev C Configuration
+                        self.logger.info("Dev C Configuring..")
+                        result = self._proxies[self.device.dev_c_fqdn].Configure(json.dumps({"something": "c_config"}))
+                        if result[0] == ResultCode.FAILED:
+                            self.logger.error(f"Configuration of Dev C failed: {result[1]}")
+                            self._reset_devices([self.device.dev_c_fqdn])
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.REJECTED,
+                                "Configuration of low-level fhs device failed",
+                            )
+                            return
+                    case _:
+                        pass
 
             self._set_task_callback(task_callback, TaskStatus.COMPLETED, ResultCode.OK, "ConfigureScan completed OK")
             self._obs_state_action_callback(FhsObsStateMachine.CONFIGURE_COMPLETED)
@@ -364,16 +390,50 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
         try:
             # set task status in progress, check for abort event
             self._scan_id = argin
+
             if not self.simulation_mode:
-                try:
-                    self._proxies[self.device.dev_a_fqdn].Start()
-                except tango.DevFailed as ex:
-                    self.logger.error(repr(ex))
-                    self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
-                    self._set_task_callback(
-                        task_callback, TaskStatus.COMPLETED, ResultCode.FAILED, "Failed to establish proxies to FHS FSP devices"
-                    )
-                    return
+                match self.fsp_mode:
+                    case FSPMode.CORR:
+                        try:
+                            self._proxies[self.device.dev_a_fqdn].Start()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case FSPMode.PST:
+                        try:
+                            self._proxies[self.device.dev_b_fqdn].Start()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case FSPMode.PSS:
+                        try:
+                            self._proxies[self.device.dev_c_fqdn].Start()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case _:
+                        pass
 
             # Update obsState callback
             self._set_task_callback(task_callback, TaskStatus.COMPLETED, ResultCode.OK, "Scan completed OK")
@@ -403,15 +463,48 @@ class FSPAllModesComponentManager(FhsComponentManagerBase):
                 return
 
             if not self.simulation_mode:
-                try:
-                    self._proxies[self.device.dev_a_fqdn].Stop()
-                except tango.DevFailed as ex:
-                    self.logger.error(repr(ex))
-                    self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
-                    self._set_task_callback(
-                        task_callback, TaskStatus.COMPLETED, ResultCode.FAILED, "Failed to establish proxies to FHS FSP devices"
-                    )
-                    return
+                match self.fsp_mode:
+                    case FSPMode.CORR:
+                        try:
+                            self._proxies[self.device.dev_a_fqdn].Stop()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case FSPMode.PST:
+                        try:
+                            self._proxies[self.device.dev_b_fqdn].Stop()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case FSPMode.PSS:
+                        try:
+                            self._proxies[self.device.dev_c_fqdn].Stop()
+                        except tango.DevFailed as ex:
+                            self.logger.error(repr(ex))
+                            self._update_communication_state(communication_state=CommunicationStatus.NOT_ESTABLISHED)
+                            self._set_task_callback(
+                                task_callback,
+                                TaskStatus.COMPLETED,
+                                ResultCode.FAILED,
+                                "Failed to establish proxies to FHS FSP devices",
+                            )
+                            return
+                    case _:
+                        pass
 
             # Update obsState callback
             self._set_task_callback(task_callback, TaskStatus.COMPLETED, ResultCode.OK, "EndScan completed OK")

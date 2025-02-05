@@ -8,11 +8,11 @@
 
 from __future__ import annotations
 
+from ska_control_model import HealthState, ObsState
 from ska_mid_cbf_fhs_common import FhsLowLevelDeviceBase
 from ska_tango_base import SKAObsDevice
-from tango.server import attribute, device_property
 from tango import DevState
-from ska_control_model import HealthState, ObsState
+from tango.server import attribute, device_property
 
 from ska_mid_cbf_fhs_fsp.dev_b.dev_b_component_manager import DevBComponentManager
 
@@ -28,7 +28,7 @@ class DevB(FhsLowLevelDeviceBase):
     def bAttr1(self, value: int) -> None:
         self.component_manager.b_attr_1 = value
         self.push_change_event("bAttr1", value)
-    
+
     @attribute(dtype=str)
     def bAttr2(self) -> str:
         return self.component_manager.b_attr_2
@@ -37,7 +37,7 @@ class DevB(FhsLowLevelDeviceBase):
     def bAttr2(self, value: str) -> None:
         self.component_manager.b_attr_2 = value
         self.push_change_event("bAttr2", value)
-    
+
     @attribute(dtype=str)
     def bAttr3(self) -> str:
         return self.component_manager.b_attr_3

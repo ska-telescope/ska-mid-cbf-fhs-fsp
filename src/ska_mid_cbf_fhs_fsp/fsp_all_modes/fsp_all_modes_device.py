@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import tango
-from ska_control_model import ResultCode
+from ska_control_model import HealthState, ObsState, ResultCode
 from ska_mid_cbf_fhs_common import FhsBaseDevice
+from ska_tango_base import SKAObsDevice
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
+from tango import DevState
 from tango.server import attribute, command, device_property
 
 from ska_mid_cbf_fhs_fsp.fsp_all_modes.fsp_all_modes_component_manager import FSPAllModesComponentManager
@@ -27,6 +29,17 @@ class FSPAllModesController(FhsBaseDevice):
     @fspMode.write
     def fspMode(self, value: int | FSPMode) -> None:
         self.component_manager.fsp_mode = FSPMode(value)
+
+    def init_device(self):
+        # TODO: update FhsBaseDevice init_device to add some set_change_events() abstract/base method
+        # so that we can avoid overriding init_device in every subclass with additional change events
+        super(SKAObsDevice, self).init_device()
+        self.set_change_event("communicationState", True)
+        self.set_change_event("fspMode", True, True)
+        self.set_state(DevState.ON)
+        self.set_status("ON")
+        self._update_health_state(HealthState.OK)
+        self._update_obs_state(obs_state=ObsState.IDLE)
 
     def create_component_manager(self: FSPAllModesController) -> FSPAllModesComponentManager:
         return FSPAllModesComponentManager(

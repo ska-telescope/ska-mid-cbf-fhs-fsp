@@ -3,7 +3,6 @@ from __future__ import annotations  # allow forward references in type hints
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 from dataclasses_json import dataclass_json
 from ska_control_model import CommunicationStatus, ResultCode
 from ska_mid_cbf_fhs_common import FhsLowLevelComponentManagerBase

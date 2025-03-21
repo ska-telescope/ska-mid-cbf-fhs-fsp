@@ -26,7 +26,6 @@ end box
 end box
 box "Resampler/Delay Tracker FW" $FWBackground
 participant "RDT Driver" as rdt_driver $FWParticipant
-participant "RDT IP" as rdt_ip $FWParticipant
 end box
 
 loop until error or force stop

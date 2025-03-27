@@ -1,0 +1,31 @@
+@startuml all_modes_controller_2
+!pragma teoz true
+allow_mixing
+
+title AA2 FSP All Modes Controller (Single Subarray Device)
+
+rectangle "MCS" as mcs
+rectangle "FSP Device" as mcs_fsp_dev
+rectangle "FSP Subarray Device" as mcs_fsp_sa_dev
+rectangle "FSP All Modes Controller Device" as mcs_fsp_all_ctrl_dev
+frame "Low-Level DS" as llds {
+  label "etc..." as label
+  rectangle "RDT Device" as rdt
+  rectangle "Data Manager Device" as dm
+  rectangle "16K Channelizer Device" as chan
+  rectangle "4K PST Channelizer Device" as pstchan
+  rectangle "PSS Corner Turn Device" as pssct
+}
+
+mcs --> mcs_fsp_dev
+mcs_fsp_dev --> mcs_fsp_sa_dev
+
+mcs_fsp_sa_dev --> mcs_fsp_all_ctrl_dev
+
+mcs_fsp_all_ctrl_dev --> rdt: if CORR or PST
+mcs_fsp_all_ctrl_dev --> dm: if CORR or PST
+mcs_fsp_all_ctrl_dev --> chan: if CORR
+mcs_fsp_all_ctrl_dev --> pstchan: if PST
+mcs_fsp_all_ctrl_dev --> pssct: if PSS
+
+@enduml

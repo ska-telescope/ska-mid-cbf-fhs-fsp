@@ -1,0 +1,51 @@
+@startuml aa1_controller
+!pragma teoz true
+allow_mixing
+
+title Current AA0.5/1 FSP Controller
+
+rectangle "MCS" as mcs
+rectangle "FSP Device" as mcs_fsp_dev
+rectangle "FSP Controller Device" as mcs_fsp_ctrl_dev
+rectangle "FSP CORR Subarray Device" as mcs_fsp_corr_dev
+rectangle "FSP CORR Controller Device" as mcs_fsp_corr_ctrl_dev
+rectangle "FSP PSS Subarray Device" as mcs_fsp_pss_dev
+rectangle "FSP PSS Controller Device" as mcs_fsp_pss_ctrl_dev
+rectangle "FSP PST Subarray Device" as mcs_fsp_pst_dev
+rectangle "FSP PST Controller Device" as mcs_fsp_pst_ctrl_dev
+frame "Low-Level DS" as llds {
+  label "etc..." as label
+  rectangle "RDT Device" as rdt
+  rectangle "Data Manager Device" as dm
+  rectangle "16K Channelizer Device" as chan
+  rectangle "4K PST Channelizer Device" as pstchan
+  rectangle "PSS Corner Turn Device" as pssct
+}
+
+mcs --> mcs_fsp_dev
+mcs_fsp_dev --> mcs_fsp_ctrl_dev
+
+mcs_fsp_dev --> mcs_fsp_corr_dev
+mcs_fsp_corr_dev --> mcs_fsp_corr_ctrl_dev
+
+mcs_fsp_dev --> mcs_fsp_pss_dev
+mcs_fsp_pss_dev --> mcs_fsp_pss_ctrl_dev
+
+mcs_fsp_dev --> mcs_fsp_pst_dev
+mcs_fsp_pst_dev --> mcs_fsp_pst_ctrl_dev
+
+mcs_fsp_ctrl_dev --> mcs_fsp_corr_ctrl_dev
+mcs_fsp_ctrl_dev --> mcs_fsp_pss_ctrl_dev
+mcs_fsp_ctrl_dev --> mcs_fsp_pst_ctrl_dev
+
+mcs_fsp_corr_ctrl_dev --> rdt
+mcs_fsp_corr_ctrl_dev --> dm
+mcs_fsp_corr_ctrl_dev --> chan
+
+mcs_fsp_pst_ctrl_dev --> rdt
+mcs_fsp_pst_ctrl_dev --> dm
+mcs_fsp_pst_ctrl_dev --> pstchan
+
+mcs_fsp_pss_ctrl_dev --> pssct
+
+@enduml

@@ -72,7 +72,7 @@ loop until error or force stop
           group if [len(FODMs_to_load) < fodm_space_available]
             rdt_cm -> rdt_cm: FODMs_to_load.append(register_values)
           else len(FODMs_to_load) >= fodm_space_available
-            rdt_cm -> fo_fifo ++ $LowLevelQLifeline: put(register_values)
+            rdt_cm -> fo_fifo ++ $LowLevelQLifeline: append(register_values)
             rdt_cm <-- fo_fifo --
           end
         end
